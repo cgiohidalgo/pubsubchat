@@ -14,25 +14,18 @@ const pubSubClient = new PubSub(credentials);
 async function createChatClient(clientID) {
     try{
       let topic = await pubSubClient.createTopic(clientID);
-      console.log(`Topic ${topic} created.`);
-      await pubSubClient.topic(clientID).createSubscription(clientID + '_');
-      console.log(`Subscription ${clientID} created.`);
+      if(topic) {
+        console.log(`Topic ${topic} created.`);
+        await pubSubClient.topic(clientID).createSubscription(clientID + '_');
+        console.log(`Subscription ${clientID} created.`);
+      }
+      
     } catch(e) {
-        console.log(e);
         console.log(' Already a client. Waiting for messages');
     }
   
   }
-  
-  function subscribeToChanel(clientID) {
-    async function createSubscription() {
-      // Creates a new subscription
-      await pubSubClient.topic(clientID).createSubscription(clientID + '_');
-      console.log(`Subscription ${clientID} created.`);
-    }
-  
-    createSubscription().catch(console.error);
-  }
+
   
   
 
