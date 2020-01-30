@@ -1,8 +1,10 @@
 const express = require('express');
 
 const datastorate = require('./storage');
-const notification = require('./notification');
+const notification = require('../notification');
+const log = require('../logger');
 const app = express();
+const game = require('./tictactoe');
 
 
 app.get('/', function(req, res) {
@@ -17,13 +19,18 @@ app.get('/newgame', function(req, res) {
     //2. Notify the pubsub chanel of the client1 with the initial state and authorize for playing the first move
     //
     //let data = {player1: 'player1', player2: 'player2', name: 'hex', state: []};
-    let data = JSON.parse(req.query.data.replace(/'/g, '"'));
-    console.log(data)
+    let data = req.query;//JSON.parse(req.query.data.replace(/'/g, '"'));
+    log(data)
     datastorate.writeData('p2pgames', data).then(async function(result) {
+        let gameid = result._path.segments[1];
         await notification.createChatClient(data.player1);
-        await notification.notifyClient(data.player1, {gameID: result._path.segments[1], state: []});
-        res.send('New ' + data.name + ' has been created with ID: ' + result._path.segments[1]);;
-        
+        await notification.createChatClient(data.player2);
+
+        //Notify both players about the begining of the game. The player starting the game will see the initial state. The second player must see null
+        await notification.sendMessage(data.player1, {gameid, vs: data.player2, name: data.name, state: game.init()}, gameid);
+        await notification.sendMessage(data.player2, {gameid, vs: data.player2, name: data.name}, gameid);
+
+        res.send('New ' + data.name + ' has been created with ID: ' + gameid);
     })
 });
 
@@ -45,4 +52,4 @@ app.get('/domove', function(req, res){
 
 app.listen(3000, () => {console.log('App listening on port 3000')} );
 
-//http://localhost:3000/newgame/?query={player1:%27amc%27,player2:%27mcf%27,name:%27hex%27,state:[]}
+//http://localhost:3000/newgame/?player1=amc&player2=mcf&name=hex&state:[]}
